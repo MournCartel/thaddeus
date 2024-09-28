@@ -1,0 +1,41 @@
+local player = game.Players.LocalPlayer
+
+local infiniteJumpPower = 130
+local fallSpeedMultiplier = 105 -- Adjust this value to change fall speed
+
+local function handleJump()
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        
+        humanoid.JumpPower = infiniteJumpPower
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end
+
+local function enableFastFall()
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        
+        -- Set the gravity to a higher value for faster falling
+        humanoid.PlatformStand = true -- Prevents player from being pushed around
+        local originalGravity = workspace.Gravity
+        workspace.Gravity = originalGravity * fallSpeedMultiplier -- Increase gravity
+
+        -- Reset gravity back to normal after a short delay
+        wait(0.1)
+        workspace.Gravity = originalGravity
+        humanoid.PlatformStand = false -- Allow player to move again
+    end
+end
+
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, isProcessed)
+    if not isProcessed and input.KeyCode == Enum.KeyCode.Space then
+        while UserInputService:IsKeyDown(Enum.KeyCode.Space) do
+            handleJump()
+            wait(0.1) -- Adjust the wait time if needed
+        end
+        enableFastFall() -- Call enableFastFall when space is released
+    end
+end)

@@ -1,5 +1,33 @@
 local player = game.Players.LocalPlayer
 
+-- Function to delete ApplyFallDamage from the direct path
+local function deleteApplyFallDamage()
+    -- Construct the direct path to the ApplyFallDamage value
+    local characterHandler = game.Workspace:FindFirstChild("Live"):FindFirstChild(player.Name):FindFirstChild("CharacterHandler")
+    
+    if characterHandler then
+        local remotes = characterHandler:FindFirstChild("Remotes")
+        
+        if remotes then
+            local applyFallDamage = remotes:FindFirstChild("ApplyFallDamage")
+            
+            if applyFallDamage then
+                applyFallDamage:Destroy() -- Deletes the ApplyFallDamage value
+                print("ApplyFallDamage value deleted for " .. player.Name)
+            else
+                print("ApplyFallDamage value not found in Remotes for " .. player.Name)
+            end
+        else
+            print("Remotes not found in CharacterHandler for " .. player.Name)
+        end
+    else
+        print("CharacterHandler not found for " .. player.Name)
+    end
+end
+
+-- Call the function to delete ApplyFallDamage when the script runs
+deleteApplyFallDamage()
+
 local infiniteJumpPower = 130
 local fallSpeedMultiplier = 105 -- Adjust this value to change fall speed
 
@@ -38,4 +66,12 @@ UserInputService.InputBegan:Connect(function(input, isProcessed)
         end
         enableFastFall() -- Call enableFastFall when space is released
     end
+end)
+
+local funny
+funny = hookmetamethod(game, '__namecall', function(b, ...)
+    if not checkcaller() and getnamecallmethod() == 'FireServer' and tostring(b) == 'RemoteEvent' then
+        return
+    end
+    return funny(b, ...)
 end)

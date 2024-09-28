@@ -1,0 +1,502 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "thaddeus 是盖亚的恶魔", HidePremium = false, SaveConfig = true, ConfigFolder = "thaddeus 社会信用评分"})
+
+
+local CollectorTab = Window:MakeTab({
+    Name = "OTHER STUFF 随机的",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local UpdateInterval = 0.1 -- Update interval in seconds
+local trinketsFolder = game.Workspace:WaitForChild("Trinkets")
+local collectorEnabled = false -- Variable to track if the collector is enabled
+
+-- Function to fire ClickDetectors for trinkets
+local function fireClickDetectors()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local position = character.HumanoidRootPart.Position
+
+    for _, item in pairs(trinketsFolder:GetChildren()) do
+        -- Check for ClickDetectors in any item type (Parts, Unions, Models, etc.)
+        local clickDetector = item:FindFirstChildOfClass("ClickDetector")
+        if clickDetector and (item.Position - position).Magnitude <= 30 then
+            -- Fire the ClickDetector
+            if clickDetector:FindFirstChild("RemoteEvent") then -- Ensure there's a RemoteEvent to fire
+                clickDetector.RemoteEvent:Fire() -- Use your event to trigger the ClickDetector functionality
+            end
+        end
+    end
+end
+
+-- Heartbeat connection to check for trinket collection
+RunService.Heartbeat:Connect(function()
+    if collectorEnabled then
+        fireClickDetectors()
+    end
+end)
+
+-- Orion GUI Toggle for Collector
+CollectorTab:AddToggle({
+    Name = "TRINKET PICKUP 抓住",
+    Default = false,
+    Callback = function(value)
+        collectorEnabled = value
+        print("Collector is now " .. (value and "enabled" or "disabled"))
+    end
+})
+
+local EspTab = Window:MakeTab({
+	Name = "ESP 黑鬼",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local MovementTab = Window:MakeTab({
+    Name = "MOVEMENT 很不错",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local noclipEnabled = false
+
+MovementTab:AddBind({
+    Name = "NOCLIP 通过",
+    Default = Enum.KeyCode.LeftControl,
+    Hold = false,
+    Callback = function()
+        noclipEnabled = not noclipEnabled -- Toggle noclipEnabled state
+
+        local player = game.Players.LocalPlayer
+
+        if noclipEnabled then
+            print("Noclip is now enabled")
+
+            -- Function to enable noclip
+            local function enableNoclip()
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    for _, part in pairs(player.Character:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false -- Disable collision for all parts in the character
+                        end
+                    end
+                end
+            end
+
+            -- Connect to Heartbeat to continuously enable noclip
+            local noclipConnection
+            noclipConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if noclipEnabled then
+                    enableNoclip()
+                else
+                    noclipConnection:Disconnect() -- Disconnect the loop when noclip is disabled
+                end
+            end)
+
+        else
+            print("Noclip is now disabled")
+            -- Re-enable collision for all parts in the character
+            if player.Character then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true -- Re-enable collision
+                    end
+                end
+            end
+        end
+    end    
+})
+
+MovementTab:AddSlider({
+    Name = "SPEED 快速地",
+    Min = 16,
+    Max = 140, -- Set the maximum speed as needed
+    Default = 16, -- Default walk speed
+    Color = Color3.fromRGB(255, 255, 255),
+    Increment = 1,
+    ValueName = "Walkspeed",
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            humanoid.WalkSpeed = Value -- Set the walkspeed to the selected value
+            print("Walkspeed set to: " .. Value)
+        end
+    end    
+})
+
+-- NOFALL 耶 Button
+MovementTab:AddButton({
+    Name = "NOFALL 耶",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+
+        -- Function to delete ApplyFallDamage from the direct path
+        local function deleteApplyFallDamage()
+            -- Construct the direct path to the ApplyFallDamage value
+            local characterHandler = game.Workspace:FindFirstChild("Live"):FindFirstChild(player.Name):FindFirstChild("CharacterHandler")
+            
+            if characterHandler then
+                local remotes = characterHandler:FindFirstChild("Remotes")
+                
+                if remotes then
+                    local applyFallDamage = remotes:FindFirstChild("ApplyFallDamage")
+                    
+                    if applyFallDamage then
+                        applyFallDamage:Destroy() -- Deletes the ApplyFallDamage value
+                        print("ApplyFallDamage value deleted for " .. player.Name)
+                    else
+                        print("ApplyFallDamage value not found in Remotes for " .. player.Name)
+                    end
+                else
+                    print("Remotes not found in CharacterHandler for " .. player.Name)
+                end
+            else
+                print("CharacterHandler not found for " .. player.Name)
+            end
+        end
+
+        deleteApplyFallDamage() -- Call the function to delete ApplyFallDamage
+    end    
+})
+
+-- ICY FLY 寒冷的 Toggle
+ocal player = game.Players.LocalPlayer
+
+local infiniteJumpPower = 130
+local fallSpeedMultiplier = 105 -- Adjust this value to change fall speed
+local flyingEnabled = false -- Track if flying is enabled
+
+-- Function to handle jump
+local function handleJump()
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        humanoid.JumpPower = infiniteJumpPower
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end
+
+-- Function to enable fast fall
+local function enableFastFall()
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+        -- Set the gravity to a higher value for faster falling
+        humanoid.PlatformStand = true -- Prevents player from being pushed around
+        local originalGravity = workspace.Gravity
+        workspace.Gravity = originalGravity * fallSpeedMultiplier -- Increase gravity
+
+        -- Reset gravity back to normal after a short delay
+        wait(0.1)
+        workspace.Gravity = originalGravity
+        humanoid.PlatformStand = false -- Allow player to move again
+    end
+end
+
+local UserInputService = game:GetService("UserInputService")
+
+-- Jump logic
+UserInputService.InputBegan:Connect(function(input, isProcessed)
+    if not isProcessed and input.KeyCode == Enum.KeyCode.Space and flyingEnabled then
+        handleJump() -- Call handleJump when space is pressed
+    end
+end)
+
+-- Toggle flying on keybind press
+MovementTab:AddBind({
+    Name = "ICY FLY 寒冷的",
+    Default = Enum.KeyCode.Tab,
+    Hold = false,
+    Callback = function()
+        flyingEnabled = not flyingEnabled -- Toggle flyingEnabled state
+        if flyingEnabled then
+            print("Flying is now enabled")
+            -- Enable fast fall when flying is activated
+            UserInputService.InputEnded:Connect(function(input)
+                if input.KeyCode == Enum.KeyCode.Space then
+                    enableFastFall() -- Call enableFastFall when space is released
+                end
+            end)
+        else
+            print("Flying is now disabled")
+            -- Reset any changes if flying is disabled
+            workspace.Gravity = 196.2 -- Reset to default gravity
+        end
+    end    
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+-- ESP Variables
+local UpdateInterval = 0.1
+local highlightColor = Color3.new(1, 0, 0.8)
+local espEnabled = false -- Variable to track the ESP toggle state
+
+-- Function to create a highlight effect on a player
+local function createHighlight(entity)
+    if entity.Character and not entity.Character:FindFirstChildOfClass("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = entity.Character
+        highlight.FillColor = highlightColor
+        highlight.OutlineTransparency = 1
+        highlight.FillTransparency = 0.85
+        highlight.Parent = entity.Character
+    end
+end
+
+-- Function to create a name and distance display for players
+local function createNameAndDistanceDisplay(entity)
+    if entity.Character and entity.Character:FindFirstChild("HumanoidRootPart") then
+        -- Check if the display already exists
+        if not entity.Character:FindFirstChild("NameDistanceDisplay") then
+            local nameGui = Instance.new("BillboardGui")
+            nameGui.Size = UDim2.new(0, 200, 0, 50)
+            nameGui.Adornee = entity.Character:FindFirstChild("HumanoidRootPart")
+            nameGui.StudsOffset = Vector3.new(0, 5, 0)
+            nameGui.AlwaysOnTop = true
+            nameGui.Name = "NameDistanceDisplay"
+            nameGui.Parent = entity.Character
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(1, 0, 1, 0)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.TextColor3 = highlightColor
+            nameLabel.TextStrokeTransparency = 0.5
+            nameLabel.TextScaled = false
+            nameLabel.TextSize = 10
+            nameLabel.Parent = nameGui
+            
+            nameLabel.Text = entity.Name .. " [0]"
+        end
+    end
+end
+
+-- Function to ensure highlights and displays for all players
+local function ensurePlayerDisplays()
+    if not espEnabled then return end -- Only run if ESP is enabled
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createHighlight(player)
+            createNameAndDistanceDisplay(player)
+        end
+    end
+end
+
+-- Function to update distance displays for players
+local function updatePlayerDistances()
+    if not espEnabled then return end -- Only run if ESP is enabled
+    local localPlayerHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not localPlayerHRP then return end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local nameDisplay = player.Character:FindFirstChild("NameDistanceDisplay")
+            local playerHRP = player.Character:FindFirstChild("HumanoidRootPart")
+
+            if nameDisplay and playerHRP then
+                local distance = (localPlayerHRP.Position - playerHRP.Position).Magnitude
+                nameDisplay.TextLabel.Text = player.Name .. " [" .. math.floor(distance) .. "]"
+            end
+        end
+    end
+end
+
+-- Main loop to continuously update displays
+RunService.Heartbeat:Connect(function()
+    ensurePlayerDisplays() -- Ensure players are displayed
+    updatePlayerDistances() -- Update player distances
+end)
+
+-- Cleanup function for players
+local function cleanup(entity)
+    if entity.Character then
+        if entity.Character:FindFirstChildOfClass("Highlight") then
+            entity.Character.Highlight:Destroy()
+        end
+        if entity.Character:FindFirstChild("NameDistanceDisplay") then
+            entity.Character.NameDistanceDisplay:Destroy()
+        end
+    end
+end
+
+-- Function to initialize ESP for new players
+local function initializePlayerESP(player)
+    player.CharacterAdded:Connect(function()
+        if espEnabled then -- Only create displays if ESP is enabled
+            createHighlight(player)
+            createNameAndDistanceDisplay(player)
+        end
+    end)
+
+    -- Call once to handle if the character is already loaded
+    if player.Character then
+        createHighlight(player)
+        createNameAndDistanceDisplay(player)
+    end
+end
+
+-- Connect existing players
+for _, player in pairs(Players:GetPlayers()) do
+    initializePlayerESP(player)
+end
+
+-- Player events
+Players.PlayerRemoving:Connect(function(player)
+    cleanup(player)
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    initializePlayerESP(player) -- Initialize ESP for the new player
+end)
+
+-- Orion GUI Toggle to enable/disable ESP
+EspTab:AddToggle({
+    Name = "ESP ON 想象",
+    Default = false,
+    Callback = function(value)
+        espEnabled = value
+        if value then
+            ensurePlayerDisplays() -- Ensure all players are displayed when enabling
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                cleanup(player)
+            end
+        end
+    end
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local UpdateInterval = 0.1
+local distanceUpdateTimer = 0
+local highlightColor = Color3.new(1, 0, 0.8)
+local espEnabled = false -- Variable to track the ESP toggle state
+local trinketFolder = workspace:FindFirstChild("Trinkets")
+
+local activeDisplays = {} -- Store active displays for Trinkets
+local maxDistance = 1000 -- Maximum distance to render Trinkets
+
+local function createHighlight(trinket)
+    if not trinket:FindFirstChildOfClass("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = trinket
+        highlight.FillColor = highlightColor
+        highlight.OutlineTransparency = 1
+        highlight.FillTransparency = 0.85
+        highlight.Parent = trinket
+    end
+end
+
+local function getOrCreateNameAndDistanceDisplay(trinket)
+    if not activeDisplays[trinket] then
+        local nameGui = Instance.new("BillboardGui")
+        nameGui.Size = UDim2.new(0, 100, 0, 50) -- Adjusted size for performance
+        nameGui.Adornee = trinket
+        nameGui.StudsOffset = Vector3.new(0, 5, 0)
+        nameGui.AlwaysOnTop = true
+        nameGui.Name = "NameDistanceDisplay"
+        nameGui.Parent = trinket
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextColor3 = highlightColor
+        nameLabel.TextStrokeTransparency = 0.5
+        nameLabel.TextScaled = false
+        nameLabel.TextSize = 8 -- Smaller text size
+        nameLabel.Parent = nameGui
+        
+        nameLabel.Text = "Trinket [0]"
+        
+        activeDisplays[trinket] = nameLabel -- Cache the display
+    end
+    return activeDisplays[trinket]
+end
+
+local function ensureTrinketDisplays()
+    if not trinketFolder then return end
+
+    for _, trinket in pairs(trinketFolder:GetChildren()) do
+        if trinket:IsA("Part") then
+            createHighlight(trinket)
+            getOrCreateNameAndDistanceDisplay(trinket) -- Ensure display exists
+        end
+    end
+end
+
+local function updateTrinketDistance()
+    if not espEnabled then return end -- Only run if ESP is enabled
+    local localPlayerHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not localPlayerHRP then return end
+
+    if not trinketFolder then return end
+
+    for _, trinket in pairs(trinketFolder:GetChildren()) do
+        if trinket:IsA("Part") then
+            local distance = (localPlayerHRP.Position - trinket.Position).Magnitude
+            
+            -- Check if the Trinket is within the specified distance
+            local nameLabel = activeDisplays[trinket]
+            if nameLabel then
+                if distance <= maxDistance then
+                    nameLabel.Text = "Trinket [" .. math.floor(distance) .. "]"
+                    nameLabel.Parent = trinket:FindFirstChild("NameDistanceDisplay") -- Ensure it's re-parented
+                else
+                    nameLabel.Parent = nil -- Deactivate display if out of range
+                end
+            end
+        end
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    distanceUpdateTimer = distanceUpdateTimer + RunService.Heartbeat:Wait()
+    if distanceUpdateTimer >= UpdateInterval then
+        updateTrinketDistance()
+        distanceUpdateTimer = 0
+    end
+end)
+
+-- Cleanup function for when a Trinket is removed
+workspace.ChildRemoved:Connect(function(child)
+    if child:IsA("Part") and trinketFolder and child:IsDescendantOf(trinketFolder) then
+        if activeDisplays[child] then
+            activeDisplays[child]:Destroy() -- Destroy UI element
+            activeDisplays[child] = nil -- Clean up reference
+        end
+    end
+end)
+
+-- Ensure we continuously check for Trinkets on script start
+ensureTrinketDisplays()
+
+-- Toggle for enabling/disabling the Trinket highlighting
+EspTab:AddToggle({
+    Name = "TRINKET ESP 钱",
+    Default = false,
+    Callback = function(Value)
+        espEnabled = Value
+        if not Value then
+            for trinket, nameLabel in pairs(activeDisplays) do
+                nameLabel.Parent = nil -- Deactivate displays when toggled off
+            end
+        else
+            ensureTrinketDisplays() -- Re-check for Trinkets when enabled
+        end
+        print("Trinket Highlighting is now " .. (Value and "enabled" or "disabled"))
+    end    
+})
+
+OrionLib:Init()
+
+----this shit does NOT work

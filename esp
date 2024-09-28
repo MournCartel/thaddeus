@@ -1,0 +1,162 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local UpdateInterval = 0.1
+local distanceUpdateTimer = 0
+local highlightColor = Color3.new(1, 0, 0.8)
+
+local function createHighlight(player)
+    if player.Character and not player.Character:FindFirstChildOfClass("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = player.Character
+        highlight.FillColor = highlightColor
+        highlight.OutlineTransparency = 1
+        highlight.FillTransparency = 0.85
+        highlight.Parent = player.Character
+    end
+end
+
+local function createNameAndDistanceDisplay(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local nameGui = Instance.new("BillboardGui")
+        nameGui.Size = UDim2.new(0, 200, 0, 50)
+        nameGui.Adornee = player.Character:FindFirstChild("HumanoidRootPart")
+        nameGui.StudsOffset = Vector3.new(0, 5, 0)
+        nameGui.AlwaysOnTop = true
+        nameGui.Name = "NameDistanceDisplay"
+        nameGui.Parent = player.Character
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextColor3 = highlightColor
+        nameLabel.TextStrokeTransparency = 0.5
+        nameLabel.TextScaled = false
+        nameLabel.TextSize = 10
+        nameLabel.Parent = nameGui
+        
+        nameLabel.Text = player.Name .. " [0]"
+
+        return nameLabel
+    end
+end
+
+local function createHealthBar(player)
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+
+        local healthBarGui = Instance.new("BillboardGui")
+        healthBarGui.Size = UDim2.new(0.13, 0, 4.8, 0)
+        healthBarGui.Adornee = player.Character:FindFirstChild("HumanoidRootPart")
+        healthBarGui.StudsOffset = Vector3.new(2.5, 0, 0)
+        healthBarGui.AlwaysOnTop = true
+        healthBarGui.Parent = player.Character
+
+        local healthBarFrame = Instance.new("Frame")
+        healthBarFrame.Size = UDim2.new(1, 0, 1, 0)
+        healthBarFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+        healthBarFrame.BorderSizePixel = 0
+        healthBarFrame.Parent = healthBarGui
+
+        local healthBarFill = Instance.new("Frame")
+        healthBarFill.Size = UDim2.new(1, 0, 1, 0)
+        healthBarFill.BackgroundColor3 = Color3.new(1, 0.67, 0.67)
+        healthBarFill.BorderSizePixel = 0
+        healthBarFill.AnchorPoint = Vector2.new(0, 1)
+        healthBarFill.Position = UDim2.new(0, 0, 1, 0)
+        healthBarFill.Parent = healthBarFrame
+
+        local healthTextLabel = Instance.new("TextLabel")
+        healthTextLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        healthTextLabel.BackgroundTransparency = 1
+        healthTextLabel.TextColor3 = Color3.new(1, 1, 1)
+        healthTextLabel.TextStrokeTransparency = 0.5
+        healthTextLabel.TextScaled = false
+        healthTextLabel.TextSize = 10
+        healthTextLabel.Position = UDim2.new(0, 0, -1, 0)
+        healthTextLabel.AnchorPoint = Vector2.new(0.5, 1)
+        healthTextLabel.Parent = healthBarGui
+
+        humanoid.HealthChanged:Connect(function(health)
+            local healthPercent = health / humanoid.MaxHealth
+            healthBarFill.Size = UDim2.new(1, 0, healthPercent, 0)
+            healthTextLabel.Text = tostring(health) .. " / " .. tostring(humanoid.MaxHealth)
+
+            if health <= 0 then
+                healthBarGui:Destroy()
+            end
+        end)
+
+        healthTextLabel.Text = tostring(humanoid.Health) .. " / " .. tostring(humanoid.MaxHealth)
+
+        return healthBarGui
+    end
+end
+
+local function ensureHealthBarsAndNameDisplays()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createHighlight(player)
+
+            if not player.Character:FindFirstChild("NameDistanceDisplay") then
+                createNameAndDistanceDisplay(player)
+            end
+            
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                if not player.Character:FindFirstChild("BillboardGui") then
+                    createHealthBar(player)
+                end
+            end
+        end
+    end
+end
+
+local function updateNameAndDistance()
+    local localPlayerHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not localPlayerHRP then return end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local nameDisplay = player.Character:FindFirstChild("NameDistanceDisplay")
+            local playerHRP = player.Character:FindFirstChild("HumanoidRootPart")
+
+            if nameDisplay and playerHRP then
+                local distance = (localPlayerHRP.Position - playerHRP.Position).Magnitude
+                nameDisplay.TextLabel.Text = player.Name .. " [" .. math.floor(distance) .. "]"
+            end
+        end
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    distanceUpdateTimer = distanceUpdateTimer + RunService.Heartbeat:Wait()
+    if distanceUpdateTimer >= UpdateInterval then
+        updateNameAndDistance()
+        distanceUpdateTimer = 0
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if player.Character then
+        if player.Character:FindFirstChildOfClass("Highlight") then
+            player.Character.Highlight:Destroy()
+        end
+        if player.Character:FindFirstChild("NameDistanceDisplay") then
+            player.Character.NameDistanceDisplay:Destroy()
+        end
+        if player.Character:FindFirstChild("BillboardGui") then
+            player.Character.BillboardGui:Destroy()
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createHighlight(player)
+        createHealthBar(player)
+        createNameAndDistanceDisplay(player)
+    end)
+end)
+
+RunService.Heartbeat:Connect(ensureHealthBarsAndNameDisplays)
